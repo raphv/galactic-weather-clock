@@ -29,3 +29,7 @@ This clock plays a random bird song every hour.
      * Canada Goose *(Branta canadensis)* from the United States by Jonathon Jongsma <https://commons.wikimedia.org/wiki/File:Branta_canadensis_-_Canada_Goose_-_XC62259.ogg>  [License: Creative Commons Attribution-Share Alike (CC-BY-SA)](https://creativecommons.org/licenses/by-sa/3.0/deed.en)
      * European Robin *(Erithacus rubecula)* from Tver, Russia by Vladimir Yu. Arkhipov <https://en.wikipedia.org/wiki/File:Erithacus_rubecula.ogg> [License: Creative Commons Attribution-Share Alike (CC-BY-SA)](https://creativecommons.org/licenses/by-sa/3.0/deed.en)
      * Blue Tit *(Cyanistes caeruleus)* from Kaluzhskiye Zaseki, Russia by Vladimir Yu. Arkhipov <https://commons.wikimedia.org/wiki/File:Cyanistes_caeruleus.ogg> [License: Creative Commons Attribution-Share Alike (CC-BY-SA)](https://creativecommons.org/licenses/by-sa/3.0/deed.en)
+
+### Preview
+
+![A photo of the Galactic Weather Clock](galactic-weather-clock.jpg)

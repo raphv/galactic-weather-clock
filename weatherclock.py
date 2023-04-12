@@ -1,6 +1,8 @@
 import time
 import ntptime
 import urequests
+import random
+import os
 from galactic import GalacticUnicorn
 from picographics import PicoGraphics, DISPLAY_GALACTIC_UNICORN
 from connect import connect, isconnected
@@ -28,10 +30,11 @@ WEATHER_URL = "http://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&ti
     location_config.TZ_DEF.replace('/','%2F')
     )
 
+BIRD_SONGS = [ 'birds/%s'%f for f in os.listdir('birds') ]
+
 PENS = [ graphics.create_pen(*color) for color in weatherclock_assets.BASE_COLORS ]
 BLACK  = PENS[0]
 WHITE  = PENS[15]
-
 
 def update_time():
     global last_ntp_update
@@ -96,7 +99,7 @@ def draw_weather(weather_code, frame_parity, offset_x=0, offset_y=0):
                         graphics.pixel(xpos, ypos)
 
 @micropython.native
-def paint_digit(i, offset_x, offset_y):
+def draw_digit(i, offset_x, offset_y):
     digit = weatherclock_assets.DIGITS3x5[i]
     for y in range(5):
         ypos = offset_y + y
@@ -104,9 +107,33 @@ def paint_digit(i, offset_x, offset_y):
             line = (digit >> y*3) & 7
             for x in range(3):
                 xpos = offset_x + x
-                if (xpos >= 0 or xpos < WIDTH) and (line & 2**x):
+                if line & 1:
                     graphics.pixel(xpos, ypos)
-                    
+                line = (line >> 1)
+
+@micropython.native
+def draw_heart(offset_x, offset_y):
+    heart = weatherclock_assets.HEART
+    for y in range(4):
+        ypos = offset_y + y
+        if (ypos >= 0) or (ypos < HEIGHT):
+            line = heart[y]
+            for x in range(5):
+                if (line & 1):
+                    graphics.pixel(x + offset_x, ypos)
+                line = (line >> 1)
+
+@micropython.native
+def draw_bird(offset_x):
+    bird = weatherclock_assets.BIRD
+    for y in range(11):
+        line = bird[y]
+        for x in range(13):
+            if (line & 1):
+                posx = (x + offset_x)%WIDTH
+                graphics.pixel(posx, y)
+            line = (line >> 1)
+
 def char_to_digit(digit_char):
     if type(digit_char) == int:
         return digit_char & 0xf
@@ -122,20 +149,20 @@ def char_to_digit(digit_char):
     except (Exception):
         return 0xf
     
-def paint_number( num, offset_x, offset_y, from_right=False):
+def draw_number( num, offset_x, offset_y, from_right=False):
     numstr = str(num)
     x = offset_x
     if from_right:
         x = x + 1 - 4*len(numstr)
     for digit in numstr:
-        paint_digit(char_to_digit(digit), x, offset_y)
+        draw_digit(char_to_digit(digit), x, offset_y)
         x += 4
 
 def draw_forecast(forecast, offset_y):
     graphics.set_pen(PENS[8])
-    paint_number('%dc'%forecast[0],36,offset_y,True)
+    draw_number('%dc'%forecast[0],36,offset_y,True)
     graphics.set_pen(PENS[11])
-    paint_number('%.0fd'%forecast[1],36,6+offset_y,True)
+    draw_number('%.0fd'%forecast[1],36,6+offset_y,True)
     draw_weather(forecast[2],parity,38,offset_y)
 
 graphics.set_pen(BLACK)
@@ -154,8 +181,9 @@ last_hour = 0
 last_second = 0
 scrolling_pos = 0
 displayed_forecast_index = 0
-year, month, day, hour, minute, second = (0,0,0,0,0,0)
+year, month, day, hour, minute, second, weekday = (0,0,0,0,0,0,0)
 is_scrolling = False
+cycles = 0
 
 while True:
     now = time.time()
@@ -169,35 +197,51 @@ while True:
             print('Time to update weather')
             update_weather()
         local_now = now + current_tz
-        year, month, day, hour, minute, second, _, _ = time.localtime(local_now)
+        year, month, day, hour, minute, second, weekday, _ = time.localtime(local_now)
         gu.set_brightness(max(.15,min(1.,gu.light()/600)))
         if last_hour != hour and minute == 0: #Sing every hour
             last_hour = hour
-            if hour >= 8 and hour <= 19: #But not at night
-                wp.play('blackbird-song.wav')
-    graphics.set_pen(BLACK)
-    graphics.clear()
-    graphics.set_pen(PENS[9])
-    paint_number('{:02}'.format(day),0,0)
-    paint_number('{:02}'.format(month),10,0)
-    graphics.set_pen(PENS[10])
-    paint_number('{:02}'.format(hour),0,6)
-    paint_number('{:02}'.format(minute),10,6)
-    graphics.set_pen(WHITE)
-    if parity:
-        graphics.pixel(8,7)
-        graphics.pixel(8,9)
-      
-    if forecasts is not None:
-        if (not now % FORECAST_DURATION) and not is_scrolling:
-            scrolling_pos = 1
-        draw_forecast(forecasts[displayed_forecast_index],-scrolling_pos)
-        is_scrolling = bool(scrolling_pos)
-        if scrolling_pos:
-            draw_forecast(forecasts[(1+displayed_forecast_index)%len(forecasts)],HEIGHT+2-scrolling_pos)
-            scrolling_pos = (1+scrolling_pos)%(2+HEIGHT)
-            if not scrolling_pos:
-                displayed_forecast_index = (1+displayed_forecast_index)%len(forecasts)
-    time.sleep(.1)
+            start_singing = 7 if weekday < 5 else 9
+            if hour >= start_singing and hour <= 19: #But not at night
+                wp.play(random.choice(BIRD_SONGS), loop=3)
+    if minute == 0 and second < 20:
+        for x in range(WIDTH):
+            graphics.set_pen(graphics.create_pen_hsv(x/WIDTH,1,.8))
+            graphics.line(x,0,x,HEIGHT)
+        graphics.set_pen(BLACK)
+        draw_bird(cycles%53)
         
+    else:
+        graphics.set_pen(BLACK)
+        graphics.clear()
+        graphics.set_pen(PENS[9])
+        draw_number('{:02}'.format(day),0,0)
+        draw_number('{:02}'.format(month),10,0)
+        graphics.set_pen(PENS[10])
+        draw_number('{:02}'.format(hour),0,6)
+        draw_number('{:02}'.format(minute),10,6)
+        graphics.set_pen(WHITE)
+        if parity:
+            graphics.pixel(8,7)
+            graphics.pixel(8,9)
+        
+        graphics.set_pen(graphics.create_pen_hsv(cycles%150/150,1,.8))
+        draw_heart(18,1)
+        
+        graphics.set_pen(graphics.create_pen_hsv((cycles+20)%150/150,1,.8))
+        draw_heart(18,6)
+          
+        if forecasts is not None:
+            if (not now % FORECAST_DURATION) and not is_scrolling:
+                scrolling_pos = 1
+            draw_forecast(forecasts[displayed_forecast_index],-scrolling_pos)
+            is_scrolling = bool(scrolling_pos)
+            if scrolling_pos:
+                draw_forecast(forecasts[(1+displayed_forecast_index)%len(forecasts)],HEIGHT+2-scrolling_pos)
+                scrolling_pos = (1+scrolling_pos)%(2+HEIGHT)
+                if not scrolling_pos:
+                    displayed_forecast_index = (1+displayed_forecast_index)%len(forecasts)
+                    
+    time.sleep(.1)
     gu.update(graphics)
+    cycles += 1

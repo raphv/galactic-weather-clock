@@ -3,11 +3,11 @@
 
 ### What is it?
 
-A Micropython script for Pimoroni's Galactic Unicorn [currently out of stock on the Pimoroni shop](https://shop.pimoroni.com/products/galactic-unicorn) that shows a clock as well as the weather forecast for the next 12 hours.
+A Micropython script for Pimoroni's Galactic Unicorn [buy from Pimoroni shop](https://shop.pimoroni.com/products/galactic-unicorn) that shows a clock as well as the weather forecast for the next 12 hours.
 
 It uses the [Open Meteo API](https://open-meteo.com/en/docs) to retrieve the weather forecast as well as to adjust the time zone.
 
-This clock plays a random bird song every hour.
+This clock plays a random bird song every hour (you can define when the alarm sounds or not by editing the `WAKING_HOURS` variable in `weatherclock.py`)
 
 ### Preview
 

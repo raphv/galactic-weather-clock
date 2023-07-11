@@ -36,6 +36,21 @@ PENS = [ graphics.create_pen(*color) for color in weatherclock_assets.BASE_COLOR
 BLACK  = PENS[0]
 WHITE  = PENS[15]
 
+WAKING_HOURS = [
+ # 11pm 8pm 4pm noon 8am 4am midnight(0am)
+ #    |  |   |   |   |   |   |
+ #    v  V   V   v   v   v   v
+    0b000011111111111110000000, # Monday
+    0b000011111111111110000000, # Tuesday
+    0b000011111111111110000000, # Wednesday
+    0b000011111111111110000000, # Thursday
+    0b000011111111111110000000, # Friday
+    0b000011111111111000000000, # Saturday
+    0b000011111111111000000000, # Sunday
+]
+
+SONG_LOOP_COUNT = 2
+
 def update_time():
     global last_ntp_update
     print('Updating time')
@@ -124,8 +139,8 @@ def draw_heart(offset_x, offset_y):
                 line = (line >> 1)
 
 @micropython.native
-def draw_bird(offset_x):
-    bird = weatherclock_assets.BIRD
+def draw_bird(offset_x, frame):
+    bird = weatherclock_assets.BIRD[frame]
     for y in range(11):
         line = bird[y]
         for x in range(13):
@@ -201,15 +216,14 @@ while True:
         gu.set_brightness(max(.15,min(1.,gu.light()/600)))
         if last_hour != hour and minute == 0: #Sing every hour
             last_hour = hour
-            start_singing = 7 if weekday < 5 else 9
-            if hour >= start_singing and hour <= 19: #But not at night
-                wp.play(random.choice(BIRD_SONGS), loop=3)
+            if ((WAKING_HOURS[weekday] >> hour) & 1): #But not at night
+                wp.play(random.choice(BIRD_SONGS), loop=SONG_LOOP_COUNT)
     if minute == 0 and second < 20:
         for x in range(WIDTH):
             graphics.set_pen(graphics.create_pen_hsv(x/WIDTH,1,.8))
             graphics.line(x,0,x,HEIGHT)
         graphics.set_pen(BLACK)
-        draw_bird(cycles%53)
+        draw_bird(cycles%53, (cycles >> 2) & 1)
         
     else:
         graphics.set_pen(BLACK)

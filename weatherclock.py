@@ -71,10 +71,10 @@ def update_weather():
         r = urequests.get(
             WEATHER_URL)
         j = r.json()
-        now_time = j["current_weather"]["time"]
+        now_time = j["current_weather"]["time"][:-2]
         index_now = 0
         for i,t in enumerate(j["hourly"]["time"]):
-            if t == now_time:
+            if t == now_time[:-2]:
                 index_now = i
                 break
         forecasts = [
